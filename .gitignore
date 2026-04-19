@@ -1,0 +1,6 @@
+pi-gen/
+deploy/
+work/
+*.img
+*.img.xz
+*.img.zip
