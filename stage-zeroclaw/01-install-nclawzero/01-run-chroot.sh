@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Add nclawzero internal apt repo (hosted on ARGONAS via ARGOS nginx)
+# Add nclawzero internal apt repo
 install -d /etc/apt/keyrings
 curl -fsSL http://192.168.207.22:8081/apt/keys/nclawzero-internal-signing.asc \
     -o /etc/apt/keyrings/nclawzero-internal.asc
@@ -13,15 +13,16 @@ Signed-By: /etc/apt/keyrings/nclawzero-internal.asc
 EOF
 
 apt-get update
+
+# Pure-zeroclaw base (also used by clawpi — nemoclaw is layered in stage-nclawzero)
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nclawzero-rdp-init \
-    zeroclaw \
-    nemoclaw-firstboot
+    zeroclaw
 
-# Add user pi to docker group
+# pi user in docker group
 usermod -aG docker pi || true
 
-# Enable unattended auto-upgrade scoped to our origin only
+# Auto-upgrade scoped to our apt origin
 cat > /etc/apt/apt.conf.d/50-nclawzero-autoupgrade <<'EOF'
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
