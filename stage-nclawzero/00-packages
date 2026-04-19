@@ -16,3 +16,17 @@ tcpdump
 dnsutils
 iperf3
 sysstat
+# --- Desktop + RDP (clawpi only) ---
+xrdp
+lxde-core
+lxterminal
+chromium
+xterm
+dbus-x11
+firefox-esr
+x11-utils
+xdg-utils
+fonts-dejavu
+# --- AI / inference (optional, runs on CPU on Pi) ---
+python3-pip
+python3-wheel
