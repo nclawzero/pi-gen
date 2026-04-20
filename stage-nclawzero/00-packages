@@ -16,7 +16,6 @@ tcpdump
 dnsutils
 iperf3
 sysstat
-# --- Desktop + RDP (clawpi only) ---
 xrdp
 xfce4
 xfce4-goodies
@@ -28,6 +27,5 @@ dbus-x11
 x11-utils
 xdg-utils
 fonts-dejavu
-# --- AI / inference utilities ---
 python3-pip
 python3-wheel
