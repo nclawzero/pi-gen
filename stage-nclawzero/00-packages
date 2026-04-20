@@ -18,15 +18,16 @@ iperf3
 sysstat
 # --- Desktop + RDP (clawpi only) ---
 xrdp
-lxde-core
-lxterminal
+xfce4
+xfce4-goodies
+xfce4-terminal
 chromium
+firefox-esr
 xterm
 dbus-x11
-firefox-esr
 x11-utils
 xdg-utils
 fonts-dejavu
-# --- AI / inference (optional, runs on CPU on Pi) ---
+# --- AI / inference utilities ---
 python3-pip
 python3-wheel
