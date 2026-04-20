@@ -65,6 +65,28 @@ cp /etc/skel/Desktop/ZeroClaw.desktop /home/pi/Desktop/
 chmod 0755 /home/pi/Desktop/ZeroClaw.desktop
 chown -R pi:pi /home/pi/Desktop
 
+# --- Passwordless sudo -u zeroclaw + zc alias for pi ------------------
+# Interactive `zeroclaw agent` needs to run as the zeroclaw user to read
+# /etc/zeroclaw/env (0600) and inherit daemon config. Without this alias
+# a session started as pi falls back to OpenRouter defaults and fails.
+cat > /etc/sudoers.d/nclawzero-zc <<'EOF'
+# Allow pi to run the zeroclaw CLI as the zeroclaw daemon user without
+# password. Scoped strictly to /usr/bin/zeroclaw — no shell, no other cmds.
+pi ALL=(zeroclaw) NOPASSWD: /usr/bin/zeroclaw
+EOF
+chmod 0440 /etc/sudoers.d/nclawzero-zc
+
+for F in /etc/skel/.bashrc /home/pi/.bashrc; do
+    if ! grep -q 'alias zc=' "$F" 2>/dev/null; then
+        cat >> "$F" <<'EOF'
+
+# nclawzero: shortcut to run zeroclaw CLI as the daemon user
+alias zc="sudo -u zeroclaw -H zeroclaw"
+EOF
+    fi
+done
+chown pi:pi /home/pi/.bashrc 2>/dev/null || true
+
 # --- nclawzero-set-keys helper ----------------------------------------
 # Usage: sudo nclawzero-set-keys <env-file>
 # Installs a user-supplied env file to /etc/zeroclaw/env with correct
