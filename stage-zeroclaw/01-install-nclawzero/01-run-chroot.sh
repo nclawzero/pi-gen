@@ -12,12 +12,25 @@ Components: main
 Signed-By: /etc/apt/keyrings/nclawzero-internal.asc
 EOF
 
+# Tailscale apt repo — not in Debian trixie default.
+curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg \
+    -o /etc/apt/keyrings/tailscale-archive-keyring.gpg
+cat > /etc/apt/sources.list.d/tailscale.sources <<'EOF'
+Types: deb
+URIs: https://pkgs.tailscale.com/stable/debian
+Suites: trixie
+Components: main
+Signed-By: /etc/apt/keyrings/tailscale-archive-keyring.gpg
+EOF
+
 apt-get update
 
-# Pure-zeroclaw base (also used by clawpi — nemoclaw is layered in stage-nclawzero)
+# Pure-zeroclaw base + tailscale (also used by clawpi — nemoclaw
+# is layered in stage-nclawzero).
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nclawzero-rdp-init \
-    zeroclaw
+    zeroclaw \
+    tailscale
 
 # pi user in docker group
 usermod -aG docker pi || true
