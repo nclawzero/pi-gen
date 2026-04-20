@@ -3,6 +3,17 @@
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nemoclaw-firstboot
 
+# --- Claude Code CLI (diagnostic tool) --------------------------------
+# Permitted as an operator-facing dev/diagnostic tool since it requires
+# the user's own Anthropic credentials at first use. Pre-installed at
+# build time so it's available immediately after flash, rather than
+# waiting for nemoclaw-firstboot to npm install it on first boot.
+#
+# Not used as an LLM provider by zeroclaw or nemoclaw — runtime agent
+# work routes through Together / Groq / OpenAI / Google / NVIDIA, never
+# Anthropic (ToS).
+npm install -g --omit=optional @anthropic-ai/claude-code || true
+
 # --- Enable xrdp for remote desktop -----------------------------------
 # xrdp generates its own self-signed cert on package install via its
 # postinst; nclawzero-rdp-init's /etc/weston/tls.cert path is vestigial
