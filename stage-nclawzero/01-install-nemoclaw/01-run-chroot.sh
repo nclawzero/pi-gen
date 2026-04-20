@@ -65,14 +65,26 @@ cp /etc/skel/Desktop/ZeroClaw.desktop /home/pi/Desktop/
 chmod 0755 /home/pi/Desktop/ZeroClaw.desktop
 chown -R pi:pi /home/pi/Desktop
 
-# --- Passwordless sudo -u zeroclaw + zc alias for pi ------------------
-# Interactive `zeroclaw agent` needs to run as the zeroclaw user to read
-# /etc/zeroclaw/env (0600) and inherit daemon config. Without this alias
-# a session started as pi falls back to OpenRouter defaults and fails.
+# --- zc-run wrapper + sudoers + alias for pi --------------------------
+# systemd's EnvironmentFile=/etc/zeroclaw/env feeds the daemon but not
+# interactive zeroclaw invocations. The wrapper sources /etc/zeroclaw/env
+# (readable only as zeroclaw) and execs zeroclaw so API keys are in-env
+# for `zc agent` sessions.
+cat > /usr/local/bin/zc-run <<'EOF'
+#!/bin/bash
+# Load API keys from /etc/zeroclaw/env (only readable by zeroclaw user),
+# then exec zeroclaw CLI. Invoke via: sudo -u zeroclaw -H /usr/local/bin/zc-run ...
+set -a
+[ -r /etc/zeroclaw/env ] && . /etc/zeroclaw/env
+set +a
+exec /usr/bin/zeroclaw "$@"
+EOF
+chmod 0755 /usr/local/bin/zc-run
+
 cat > /etc/sudoers.d/nclawzero-zc <<'EOF'
-# Allow pi to run the zeroclaw CLI as the zeroclaw daemon user without
-# password. Scoped strictly to /usr/bin/zeroclaw — no shell, no other cmds.
-pi ALL=(zeroclaw) NOPASSWD: /usr/bin/zeroclaw
+# Allow pi to run the zeroclaw CLI (directly or via zc-run wrapper) as
+# the zeroclaw daemon user without password. Scoped — no shell.
+pi ALL=(zeroclaw) NOPASSWD: /usr/bin/zeroclaw, /usr/local/bin/zc-run
 EOF
 chmod 0440 /etc/sudoers.d/nclawzero-zc
 
@@ -81,7 +93,7 @@ for F in /etc/skel/.bashrc /home/pi/.bashrc; do
         cat >> "$F" <<'EOF'
 
 # nclawzero: shortcut to run zeroclaw CLI as the daemon user
-alias zc="sudo -u zeroclaw -H zeroclaw"
+alias zc="sudo -u zeroclaw -H /usr/local/bin/zc-run"
 EOF
     fi
 done
