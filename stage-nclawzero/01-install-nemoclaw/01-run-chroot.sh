@@ -116,10 +116,10 @@ Installs the given env file to /etc/zeroclaw/env (mode 0600,
 owner zeroclaw:zeroclaw) and restarts the zeroclaw daemon so it
 picks up the new keys. Expected format: KEY=value per line.
 
-Common keys ZeroClaw recognises: TOGETHER_API_KEY, OPENAI_API_KEY,
-ANTHROPIC_API_KEY, GROQ_API_KEY, MISTRAL_API_KEY, GOOGLE_API_KEY,
-GEMINI_API_KEY, XAI_API_KEY, PERPLEXITY_API_KEY, MINIMAX_API_KEY,
-FIREWORKS_API_KEY, OPENROUTER_API_KEY, NVIDIA_API_KEY, and others.
+Common keys: TOGETHER_API_KEY, OPENAI_API_KEY, GROQ_API_KEY,
+MISTRAL_API_KEY, GOOGLE_API_KEY, GEMINI_API_KEY, XAI_API_KEY,
+PERPLEXITY_API_KEY, MINIMAX_API_KEY, FIREWORKS_API_KEY,
+OPENROUTER_API_KEY, NVIDIA_API_KEY.
 HELP
     exit 1
 fi
