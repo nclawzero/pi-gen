@@ -1,0 +1,17 @@
+# pi-gen-nclawzero — CI policy: lint only.
+# Full image build is too heavy for shared GitLab runners; gated to a
+# self-hosted runner (TBD on ARGOS).
+
+default:
+  image: koalaman/shellcheck-alpine:stable
+
+stages:
+  - lint
+
+shellcheck:
+  stage: lint
+  before_script:
+    - apk add --no-cache bash
+  script:
+    - find . -type f -name '*.sh' -print0 | xargs -0 shellcheck --severity=warning --exclude=SC2010
+    - find . -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
