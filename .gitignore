@@ -4,3 +4,11 @@ work/
 *.img
 *.img.xz
 *.img.zip
+
+# Authentication-policy material — fleet-internal, never published.
+# pubkey lists reveal fleet topology (which workstations have access to
+# which devices). The .example sibling alongside is the committed
+# documentation. Operator copies the .example to the gitignored path,
+# fills in real fleet keys, builds. Stage 04-bake-authorized-keys fails
+# fast with a pointer to .example if this file is missing.
+stage-zeroclaw/04-bake-authorized-keys/files/authorized_keys

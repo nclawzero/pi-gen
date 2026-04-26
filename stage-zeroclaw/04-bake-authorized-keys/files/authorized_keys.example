@@ -1,0 +1,35 @@
+# pi-gen-nclawzero / authorized_keys.example
+#
+# THIS FILE IS COMMITTED.  Documents the format expected by the
+# stage-zeroclaw/04-bake-authorized-keys stage. The actual fleet-internal
+# key list lives at the sibling path `authorized_keys` (no .example
+# suffix), which is gitignored — never published to gitlab.com / github.com.
+#
+# To populate before building:
+#
+#   1. cp stage-zeroclaw/04-bake-authorized-keys/files/authorized_keys.example \
+#         stage-zeroclaw/04-bake-authorized-keys/files/authorized_keys
+#
+#   2. Replace the placeholder lines below with your fleet's real
+#      ssh-ed25519 / ssh-rsa pubkey lines.
+#
+#   3. Sanity-check: `git status` must NOT show
+#      stage-zeroclaw/04-bake-authorized-keys/files/authorized_keys as
+#      tracked — the .gitignore rule keeps it local-only.
+#
+# Format (one key per line, comment field is informational):
+#   ssh-<type> <base64> <comment-descriptive-of-workstation>
+#
+# Idempotency: every rebuild replaces /home/<user>/.ssh/authorized_keys
+# wholesale on the produced image; nothing accumulates across re-builds.
+# Rotation = edit this file + rebuild image + reflash.
+#
+# Both targets (FIRST_USER_NAME — typically ncz — and the jasonperlow
+# backup user) get the SAME authorized_keys content. The second user
+# is a defense-in-depth foothold for when the operator account is
+# disrupted (cf. 2026-04-26 Trixie userconfig stripping clawpi+zeropi
+# accounts at first boot).
+
+# Replace these placeholder lines with real fleet workstation keys:
+ssh-ed25519 AAAAREPLACEME jperlow@<workstation-name>
+# ssh-ed25519 AAAAREPLACEME <user>@<host>
