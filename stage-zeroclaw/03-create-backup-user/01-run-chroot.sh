@@ -69,4 +69,26 @@ jasonperlow ALL=(ALL) NOPASSWD: ALL
 EOF
 chmod 0440 /etc/sudoers.d/95-jasonperlow-nopasswd
 
+# NOPASSWD sudo for the FIRST_USER (operator account, default ncz) too.
+# Parallel to the meta-nclawzero Yocto recipe at
+# `recipes-core/nclawzero-system-config/files/sudoers-ncz` which writes
+# the same drop-in for the Yocto Jetson + RPi images.  Without this,
+# `ncz` can SSH in (key-based) but `sudo` prompts for a password —
+# operator-UX mismatch with the Yocto images and with what the dual-
+# user auth model promises.  Add here so pi-gen images match.
+#
+# Idempotent: whole-file overwrite each build.  Path numbered 90- so
+# it sorts before the 95- backup-user drop-in for predictable
+# precedence; sudoers behavior is "last match wins" but operators
+# expect alphabetical ordering at /etc/sudoers.d/.
+NCZ="${FIRST_USER_NAME:-pi}"
+cat > /etc/sudoers.d/90-nclawzero-ncz <<EOF
+# NOPASSWD sudo for the operator account on nclawzero edge devices.
+# Mirrors the same posture in meta-nclawzero's sudoers-ncz recipe.
+# Applied uniformly across Pi + Jetson fleet.
+${NCZ} ALL=(ALL:ALL) NOPASSWD: ALL
+EOF
+chmod 0440 /etc/sudoers.d/90-nclawzero-ncz
+
 echo "[03-create-backup-user] converged: shell=${SHELL_PATH} groups=${GROUPS_TARGET} pwd=locked"
+echo "[03-create-backup-user] sudoers: NOPASSWD baked for ${NCZ} + jasonperlow"
