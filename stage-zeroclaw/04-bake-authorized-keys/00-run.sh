@@ -62,14 +62,32 @@ if [ "${REAL_LINE_COUNT}" -lt 1 ]; then
     exit 1
 fi
 
-# ── 4. ssh-keygen validates each line ──────────────────────────────
-# ssh-keygen -l -f <file> reports one fingerprint per valid key line;
-# non-zero exit = at least one bad line.  Catches typos, wrong base64,
-# truncated keys, etc.  Fail before bake rather than after flash.
-if ! ssh-keygen -l -f "${KEYS_FILE}" > /dev/null 2>&1; then
-    echo "[04-bake-authorized-keys] FATAL: ssh-keygen rejected at least one line in ${KEYS_FILE}."
-    echo "Fix the file (one valid 'ssh-<type> <base64> <comment>' per line) and re-run."
-    ssh-keygen -l -f "${KEYS_FILE}" 2>&1 | sed 's/^/  /'
+# ── 4. ssh-keygen validates each non-comment line independently ────
+# Calling `ssh-keygen -l -f <file>` whole-file is NOT enough: ssh-keygen
+# returns 0 if it can parse AT LEAST ONE valid key, even when other lines
+# are garbled (verified empirically with `ssh-keygen -l -f /dev/stdin`
+# fed "<valid-key>\nnotakey").  A mixed file (one good key + one
+# truncated key) would pass that check and silently bake a partially
+# unreachable set of recovery accounts.
+#
+# Per-line check: stream each non-blank, non-comment line into
+# `ssh-keygen -l -f /dev/stdin` and fail on the first bad line, with
+# line number for diagnostics.
+LINE_NO=0
+BAD=
+while IFS= read -r LINE; do
+    LINE_NO=$((LINE_NO + 1))
+    case "$LINE" in
+        ''|'#'*) continue ;;     # blank or comment
+    esac
+    if ! printf '%s\n' "$LINE" | ssh-keygen -l -f /dev/stdin > /dev/null 2>&1; then
+        echo "[04-bake-authorized-keys] FATAL: ${KEYS_FILE}:${LINE_NO} is not a valid pubkey:"
+        echo "    ${LINE}"
+        BAD=1
+    fi
+done < "${KEYS_FILE}"
+if [ -n "$BAD" ]; then
+    echo "Fix invalid line(s) above (one valid 'ssh-<type> <base64> <comment>' per line) and re-run."
     exit 1
 fi
 
