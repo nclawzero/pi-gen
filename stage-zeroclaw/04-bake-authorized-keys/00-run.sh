@@ -75,7 +75,11 @@ fi
 # line number for diagnostics.
 LINE_NO=0
 BAD=
-while IFS= read -r LINE; do
+# `|| [ -n "$LINE" ]` keeps the loop running for the final line when
+# the file lacks a trailing newline (read returns nonzero but LINE is
+# populated).  Without that fallthrough, an unterminated invalid final
+# line slips past validation.
+while IFS= read -r LINE || [ -n "$LINE" ]; do
     LINE_NO=$((LINE_NO + 1))
     case "$LINE" in
         ''|'#'*) continue ;;     # blank or comment
