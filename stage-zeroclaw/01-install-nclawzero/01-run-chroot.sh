@@ -32,8 +32,10 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     zeroclaw \
     tailscale
 
-# pi user in docker group
-usermod -aG docker pi || true
+# Operator user in docker group. FIRST_USER_NAME is exported into the
+# chroot by pi-gen — quote-default to "pi" for safety on legacy builds
+# where the var might be unset, but new images always set it via config.
+usermod -aG docker "${FIRST_USER_NAME:-pi}" || true
 
 # Auto-upgrade scoped to our apt origin
 cat > /etc/apt/apt.conf.d/50-nclawzero-autoupgrade <<'EOF'

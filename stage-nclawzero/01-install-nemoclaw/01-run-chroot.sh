@@ -19,18 +19,19 @@ npm install -g --omit=optional @anthropic-ai/claude-code || true
 # postinst; nclawzero-rdp-init's /etc/weston/tls.cert path is vestigial
 # (stays as a no-op on Pi OS images since weston isn't installed).
 systemctl enable xrdp.service || true
-usermod -aG ssl-cert pi || true
+usermod -aG ssl-cert "${FIRST_USER_NAME:-pi}" || true
 
-# --- XFCE4 session for pi via xrdp ------------------------------------
+# --- XFCE4 session for the operator user via xrdp --------------------
 # XFCE4 has proper HiDPI/DPI scaling controls in xfce4-settings-manager,
 # unlike LXDE which hardcodes 26px panels that render tiny on Retina
-# RDP clients. Point pi's ~/.xsession at startxfce4.
-cat > /home/pi/.xsession <<'EOF'
+# RDP clients. Point the user's ~/.xsession at startxfce4.
+USR="${FIRST_USER_NAME:-pi}"
+cat > "/home/${USR}/.xsession" <<'EOF'
 #!/bin/sh
 exec /usr/bin/startxfce4
 EOF
-chmod 0755 /home/pi/.xsession
-chown pi:pi /home/pi/.xsession
+chmod 0755 "/home/${USR}/.xsession"
+chown "${USR}:${USR}" "/home/${USR}/.xsession"
 
 # --- Chromium managed policy: homepage = ZeroClaw web dashboard -------
 install -d /etc/chromium/policies/managed
@@ -58,8 +59,8 @@ cat > /etc/firefox-esr/policies/policies.json <<'EOF'
 }
 EOF
 
-# --- Desktop shortcut (for pi + future users via /etc/skel) -----------
-install -d /etc/skel/Desktop /home/pi/Desktop
+# --- Desktop shortcut (for operator + future users via /etc/skel) -----
+install -d /etc/skel/Desktop "/home/${USR}/Desktop"
 cat > /etc/skel/Desktop/ZeroClaw.desktop <<'EOF'
 [Desktop Entry]
 Version=1.0
@@ -72,11 +73,11 @@ Terminal=false
 Categories=Network;WebBrowser;
 EOF
 chmod 0755 /etc/skel/Desktop/ZeroClaw.desktop
-cp /etc/skel/Desktop/ZeroClaw.desktop /home/pi/Desktop/
-chmod 0755 /home/pi/Desktop/ZeroClaw.desktop
-chown -R pi:pi /home/pi/Desktop
+cp /etc/skel/Desktop/ZeroClaw.desktop "/home/${USR}/Desktop/"
+chmod 0755 "/home/${USR}/Desktop/ZeroClaw.desktop"
+chown -R "${USR}:${USR}" "/home/${USR}/Desktop"
 
-# --- zc-run wrapper + sudoers + alias for pi --------------------------
+# --- zc-run wrapper + sudoers + alias for the operator user ----------
 # systemd's EnvironmentFile=/etc/zeroclaw/env feeds the daemon but not
 # interactive zeroclaw invocations. The wrapper sources /etc/zeroclaw/env
 # (readable only as zeroclaw) and execs zeroclaw so API keys are in-env
@@ -92,14 +93,15 @@ exec /usr/bin/zeroclaw "$@"
 EOF
 chmod 0755 /usr/local/bin/zc-run
 
-cat > /etc/sudoers.d/nclawzero-zc <<'EOF'
-# Allow pi to run the zeroclaw CLI (directly or via zc-run wrapper) as
-# the zeroclaw daemon user without password. Scoped — no shell.
-pi ALL=(zeroclaw) NOPASSWD: /usr/bin/zeroclaw, /usr/local/bin/zc-run
+cat > /etc/sudoers.d/nclawzero-zc <<EOF
+# Allow the operator user to run the zeroclaw CLI (directly or via the
+# zc-run wrapper) as the zeroclaw daemon user without password. Scoped —
+# no shell.
+${USR} ALL=(zeroclaw) NOPASSWD: /usr/bin/zeroclaw, /usr/local/bin/zc-run
 EOF
 chmod 0440 /etc/sudoers.d/nclawzero-zc
 
-for F in /etc/skel/.bashrc /home/pi/.bashrc; do
+for F in /etc/skel/.bashrc "/home/${USR}/.bashrc"; do
     if ! grep -q 'alias zc=' "$F" 2>/dev/null; then
         cat >> "$F" <<'EOF'
 
@@ -108,7 +110,7 @@ alias zc="sudo -u zeroclaw -H /usr/local/bin/zc-run"
 EOF
     fi
 done
-chown pi:pi /home/pi/.bashrc 2>/dev/null || true
+chown "${USR}:${USR}" "/home/${USR}/.bashrc" 2>/dev/null || true
 
 # --- nclawzero-set-keys helper ----------------------------------------
 # Usage: sudo nclawzero-set-keys <env-file>

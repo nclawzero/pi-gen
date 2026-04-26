@@ -1,7 +1,7 @@
 IMG_NAME="nclawzero-zeropi"
 RELEASE="trixie"
 TARGET_HOSTNAME="zeropi"
-FIRST_USER_NAME="pi"
+FIRST_USER_NAME="ncz"
 FIRST_USER_PASS="Gumbo@Kona1b"
 ENABLE_SSH=1
 LOCALE_DEFAULT="en_US.UTF-8"
