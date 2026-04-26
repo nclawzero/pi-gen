@@ -62,36 +62,52 @@ if [ "${REAL_LINE_COUNT}" -lt 1 ]; then
     exit 1
 fi
 
-# ── 4. ssh-keygen validates each non-comment line independently ────
-# Calling `ssh-keygen -l -f <file>` whole-file is NOT enough: ssh-keygen
-# returns 0 if it can parse AT LEAST ONE valid key, even when other lines
-# are garbled (verified empirically with `ssh-keygen -l -f /dev/stdin`
-# fed "<valid-key>\nnotakey").  A mixed file (one good key + one
-# truncated key) would pass that check and silently bake a partially
-# unreachable set of recovery accounts.
+# ── 4. per-line validation: strict first-field + ssh-keygen ────────
+# Two-stage check per non-comment line:
+#   (1) STRICT first-field grammar — must be a sshd-supported key type
+#       like ssh-ed25519 / ssh-rsa / ecdsa-sha2-nistp256.  ssh-keygen
+#       fingerprints lines like `- ssh-ed25519 AAAA...` or
+#       `bad-option ssh-ed25519 AAAA...` (it scans for any valid
+#       token), but sshd then rejects them as malformed options syntax.
+#       Reject at build time so we don't ship lines sshd will silently
+#       ignore.
+#   (2) ssh-keygen on the line — catches base64 corruption etc.
+#       `ssh-keygen -l -f <wholefile>` is NOT enough: it returns 0 if
+#       it can parse AT LEAST ONE valid key, even when other lines
+#       are garbled. Per-line is the only way.
 #
-# Per-line check: stream each non-blank, non-comment line into
-# `ssh-keygen -l -f /dev/stdin` and fail on the first bad line, with
-# line number for diagnostics.
+# The `|| [ -n "$LINE" ]` keeps the loop running for the final line
+# when the file lacks a trailing newline (read returns nonzero but
+# LINE is populated). Without that, unterminated invalid final lines
+# slip past validation.
+#
+# Diagnostics report only line NUMBERS.  Line contents are
+# fleet-internal (pubkey + comment fields reveal access topology) and
+# CI build logs aren't fleet-internal — keep keys out of them.
+SSHD_KEY_TYPES=" ssh-rsa ssh-dss ssh-ed25519 ssh-ed25519-cert-v01@openssh.com ssh-rsa-cert-v01@openssh.com ssh-dss-cert-v01@openssh.com ecdsa-sha2-nistp256 ecdsa-sha2-nistp384 ecdsa-sha2-nistp521 ecdsa-sha2-nistp256-cert-v01@openssh.com ecdsa-sha2-nistp384-cert-v01@openssh.com ecdsa-sha2-nistp521-cert-v01@openssh.com sk-ecdsa-sha2-nistp256@openssh.com sk-ssh-ed25519@openssh.com "
 LINE_NO=0
-BAD=
-# `|| [ -n "$LINE" ]` keeps the loop running for the final line when
-# the file lacks a trailing newline (read returns nonzero but LINE is
-# populated).  Without that fallthrough, an unterminated invalid final
-# line slips past validation.
+BAD_LINES=""
 while IFS= read -r LINE || [ -n "$LINE" ]; do
     LINE_NO=$((LINE_NO + 1))
     case "$LINE" in
-        ''|'#'*) continue ;;     # blank or comment
+        ''|'#'*) continue ;;
+    esac
+    # First whitespace-separated token.
+    FIRST="${LINE%%[[:space:]]*}"
+    case "$SSHD_KEY_TYPES" in
+        *" $FIRST "*) ;;  # known type, fall through to ssh-keygen
+        *) BAD_LINES="${BAD_LINES} ${LINE_NO}"; continue ;;
     esac
     if ! printf '%s\n' "$LINE" | ssh-keygen -l -f /dev/stdin > /dev/null 2>&1; then
-        echo "[04-bake-authorized-keys] FATAL: ${KEYS_FILE}:${LINE_NO} is not a valid pubkey:"
-        echo "    ${LINE}"
-        BAD=1
+        BAD_LINES="${BAD_LINES} ${LINE_NO}"
     fi
 done < "${KEYS_FILE}"
-if [ -n "$BAD" ]; then
-    echo "Fix invalid line(s) above (one valid 'ssh-<type> <base64> <comment>' per line) and re-run."
+if [ -n "$BAD_LINES" ]; then
+    echo "[04-bake-authorized-keys] FATAL: ${KEYS_FILE} has malformed line(s) at:${BAD_LINES}"
+    echo "Each line must start with an sshd-supported key type (ssh-ed25519,"
+    echo "ssh-rsa, ecdsa-sha2-nistp256, etc.) followed by base64 + optional"
+    echo "comment. No bullet prefixes, no leading options-style fields."
+    echo "Line content NOT echoed (fleet-internal). Read ${KEYS_FILE} locally."
     exit 1
 fi
 
