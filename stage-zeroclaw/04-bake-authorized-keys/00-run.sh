@@ -85,6 +85,20 @@ fi
 # fleet-internal (pubkey + comment fields reveal access topology) and
 # CI build logs aren't fleet-internal — keep keys out of them.
 SSHD_KEY_TYPES=" ssh-rsa ssh-dss ssh-ed25519 ssh-ed25519-cert-v01@openssh.com ssh-rsa-cert-v01@openssh.com ssh-dss-cert-v01@openssh.com ecdsa-sha2-nistp256 ecdsa-sha2-nistp384 ecdsa-sha2-nistp521 ecdsa-sha2-nistp256-cert-v01@openssh.com ecdsa-sha2-nistp384-cert-v01@openssh.com ecdsa-sha2-nistp521-cert-v01@openssh.com sk-ecdsa-sha2-nistp256@openssh.com sk-ssh-ed25519@openssh.com "
+
+# ssh-keygen presence — pi-gen's Debian trixie build container does
+# NOT install openssh-client by default, so this stage script (which
+# runs in the host context, not the chroot) has no `ssh-keygen` to
+# call. Detect once + fall back to first-field-only validation when
+# absent, instead of treating every "command not found" exit code as
+# a malformed-key signal.
+if command -v ssh-keygen > /dev/null 2>&1; then
+    HAS_SSH_KEYGEN=1
+else
+    HAS_SSH_KEYGEN=0
+    echo "[04-bake-authorized-keys] note: ssh-keygen not in PATH inside the pi-gen build container — falling back to first-field-grammar validation only"
+fi
+
 LINE_NO=0
 BAD_LINES=""
 while IFS= read -r LINE || [ -n "$LINE" ]; do
@@ -98,8 +112,11 @@ while IFS= read -r LINE || [ -n "$LINE" ]; do
         *" $FIRST "*) ;;  # known type, fall through to ssh-keygen
         *) BAD_LINES="${BAD_LINES} ${LINE_NO}"; continue ;;
     esac
-    if ! printf '%s\n' "$LINE" | ssh-keygen -l -f /dev/stdin > /dev/null 2>&1; then
-        BAD_LINES="${BAD_LINES} ${LINE_NO}"
+    # Optional second-stage check via ssh-keygen — only when available.
+    if [ "$HAS_SSH_KEYGEN" = 1 ]; then
+        if ! printf '%s\n' "$LINE" | ssh-keygen -l -f /dev/stdin > /dev/null 2>&1; then
+            BAD_LINES="${BAD_LINES} ${LINE_NO}"
+        fi
     fi
 done < "${KEYS_FILE}"
 if [ -n "$BAD_LINES" ]; then
