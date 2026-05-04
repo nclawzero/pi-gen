@@ -1,12 +1,12 @@
 #!/bin/bash -e
 # Add nclawzero internal apt repo
 install -d /etc/apt/keyrings
-curl -fsSL http://192.168.207.22:8081/apt/keys/nclawzero-internal-signing.asc \
+curl -fsSL http://10.0.0.22:8081/apt/keys/nclawzero-internal-signing.asc \
     -o /etc/apt/keyrings/nclawzero-internal.asc
 
 cat > /etc/apt/sources.list.d/nclawzero.sources <<'EOF'
 Types: deb
-URIs: http://192.168.207.22:8081/apt
+URIs: http://10.0.0.22:8081/apt
 Suites: trixie
 Components: main
 Signed-By: /etc/apt/keyrings/nclawzero-internal.asc
