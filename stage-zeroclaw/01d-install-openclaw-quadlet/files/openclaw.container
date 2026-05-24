@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenClaw AI Agent (port 18789)
+Requires=nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+Wants=network-online.target
+
+[Container]
+Image=ghcr.io/openclaw/openclaw:main
+ContainerName=openclaw
+PublishPort=18789:18789
+AutoUpdate=registry
+Volume=openclaw-data:/openclaw-data:Z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+

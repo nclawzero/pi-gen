@@ -25,17 +25,11 @@ EOF
 
 apt-get update
 
-# Pure-zeroclaw base + tailscale (also used by clawpi — nemoclaw
-# is layered in stage-nclawzero).
+# Shared base + tailscale. NemoClaw and agent container quadlets are installed
+# by the following substages, with optional agent stages skipped per profile.
 DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     nclawzero-rdp-init \
-    zeroclaw \
     tailscale
-
-# Operator user in docker group. FIRST_USER_NAME is exported into the
-# chroot by pi-gen — quote-default to "pi" for safety on legacy builds
-# where the var might be unset, but new images always set it via config.
-usermod -aG docker "${FIRST_USER_NAME:-pi}" || true
 
 # Auto-upgrade scoped to our apt origin
 cat > /etc/apt/apt.conf.d/50-nclawzero-autoupgrade <<'EOF'

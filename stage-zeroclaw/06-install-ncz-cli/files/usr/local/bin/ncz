@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+NCZ_LIB_DIR="${NCZ_LIB_DIR:-/usr/local/lib/ncz}"
+
+usage() {
+    cat <<'EOF'
+Usage: ncz <command> [args]
+
+Tier 1:
+  status [--json]
+  set-agent <zeroclaw|openclaw|hermes>
+  logs [agent]
+  restart [agent]
+  pause [agent]
+  resume [agent]
+  version [--json]
+
+Tier 2:
+  providers list|test|set-primary ...
+  sandbox [--json]
+  sandbox policy <agent>
+  integrity
+  update [--check]
+  channel [stable|canary|beta]
+  health
+  inspect
+  selftest
+EOF
+}
+
+if [ ! -r "${NCZ_LIB_DIR}/common.sh" ]; then
+    printf 'ncz: missing library directory: %s\n' "$NCZ_LIB_DIR" >&2
+    exit 2
+fi
+
+# shellcheck source=/dev/null
+. "${NCZ_LIB_DIR}/common.sh"
+
+cmd="${1:-help}"
+if [ "$#" -gt 0 ]; then
+    shift
+fi
+
+case "$cmd" in
+    help|-h|--help)
+        usage
+        ;;
+    status|set-agent|logs|restart|pause|resume|version|providers|sandbox|integrity|update|channel|health|inspect|selftest)
+        handler="${NCZ_LIB_DIR}/${cmd}.sh"
+        [ -r "$handler" ] || ncz_die "missing handler for command: $cmd" 2
+        # shellcheck source=/dev/null
+        . "$handler"
+        "ncz_cmd_${cmd//-/_}" "$@"
+        ;;
+    *)
+        usage >&2
+        ncz_die "unknown command: $cmd" 1
+        ;;
+esac

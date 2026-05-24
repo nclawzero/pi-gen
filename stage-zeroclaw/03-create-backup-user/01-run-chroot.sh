@@ -31,7 +31,7 @@
 
 USR=jasonperlow
 SHELL_PATH=/bin/bash
-GROUPS_TARGET="adm,dialout,cdrom,audio,users,sudo,video,games,plugdev,input,gpio,spi,i2c,netdev,render,docker"
+GROUPS_TARGET="adm,dialout,cdrom,audio,users,sudo,video,games,plugdev,input,gpio,spi,i2c,netdev,render"
 
 if getent passwd "${USR}" > /dev/null; then
     echo "[03-create-backup-user] ${USR} exists — reconciling state"

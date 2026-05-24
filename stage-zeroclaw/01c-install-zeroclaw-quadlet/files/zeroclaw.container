@@ -1,0 +1,24 @@
+[Unit]
+Description=ZeroClaw AI Agent (Rust gateway, port 42617)
+Requires=nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+Wants=network-online.target
+
+[Container]
+Image=ghcr.io/perlowja/nclawzero-demo:latest
+ContainerName=zeroclaw
+PublishPort=42617:42617
+AutoUpdate=registry
+Entrypoint=/usr/local/bin/zeroclaw
+Exec=daemon --host 0.0.0.0 --port 42617
+Environment=ZEROCLAW_BIND=0.0.0.0
+EnvironmentFile=/etc/zeroclaw/env
+Volume=zeroclaw-data:/zeroclaw-data:Z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target default.target

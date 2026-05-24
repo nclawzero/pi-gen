@@ -39,12 +39,16 @@ Output: `pi-gen/deploy/image_<date>-nclawzero-<profile>.img.xz` (xz-compressed).
 stage-zeroclaw/                      — shared by both clawpi and zeropi
   00-install-packages/               — base utilities + tailscale repo
   01-install-nclawzero/              — nclawzero apt repo + zeroclaw
+  01b-install-nemoclaw/              — shared NemoClaw sandbox runtime
+  01c-install-zeroclaw-quadlet/      — zeroclaw quadlet + arm64 OCI archive
+  01d-install-openclaw-quadlet/      — openclaw quadlet + arm64 OCI archive
+  01e-install-hermes-quadlet/        — hermes quadlet + arm64 OCI archive
   02-bake-userconf/                  — Pi OS Trixie userconfig.txt bake
   03-create-backup-user/             — jasonperlow defense-in-depth user
   04-bake-authorized-keys/           — fleet authorized_keys → ncz + jasonperlow
-stage-nclawzero/                     — clawpi-only (full stack)
+stage-nclawzero/                     — clawpi/bigpi-only (full stack)
   00-install-packages/               — XFCE, browsers, dev tools
-  01-install-nemoclaw/               — NemoClaw + Claude Code CLI
+  01-install-nemoclaw/               — desktop/CLI operator conveniences
 ```
 
 ## First-boot user model (post 2026-04-26 reflash)
@@ -63,6 +67,22 @@ Both accounts share the same baked `authorized_keys` (stage `04-bake-authorized-
 The build fails fast if the keys file is missing, contains the `AAAAREPLACEME` placeholder, or has any line that fails per-line `ssh-keygen` validation (including bullet-prefixed `- ssh-ed25519 ...` shapes that ssh-keygen accepts but sshd refuses).
 
 Diagnostics on validation failure report only line numbers — line content is fleet-internal and never echoed to build logs.
+
+## Agent containers and auto-update
+
+Agent containers are baked as Podman quadlets under `/etc/containers/systemd/`.
+The default active agent is `zeroclaw`. `clawpi`, `zeropi`, and `bigpi` bake
+`zeroclaw`, `openclaw`, and `hermes`. Quadlets use floating HEAD-tracking tags
+plus `AutoUpdate=registry`, and the image enables `podman-auto-update.timer`
+for the daily Podman registry check. The bake stores arm64 OCI archives and
+first boot loads them into Podman, then enables and starts `zeroclaw.service`
+once after quadlet generation. Operators can opt out with
+`sudo systemctl disable --now podman-auto-update.timer`.
+
+Profile configs gate optional quadlets with `SKIP_AGENT_QUADLET_STAGES`.
+The `SKIP_AGENT_QUADLET_STAGES` profile variable can intentionally omit optional
+agent substages for constrained images, but the fleet profiles currently leave
+it empty so all agent quadlets and image archives are baked.
 
 ## Flash
 

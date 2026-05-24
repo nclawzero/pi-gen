@@ -1,0 +1,9 @@
+# nclawzero operator CLI allowlist.
+# The ncz account already owns daily device operations; this drop-in makes
+# the device-ops commands noninteractive without granting broad NOPASSWD ALL.
+Cmnd_Alias NCZ_SYSTEMD = /bin/systemctl *, /usr/bin/systemctl *, /bin/journalctl *, /usr/bin/journalctl *
+Cmnd_Alias NCZ_APT = /bin/apt *, /usr/bin/apt *, /bin/apt-get *, /usr/bin/apt-get *
+Cmnd_Alias NCZ_PODMAN = /usr/bin/podman *
+Cmnd_Alias NCZ_FILEOPS = /bin/mkdir *, /usr/bin/mkdir *, /bin/mv *, /usr/bin/mv *, /bin/rm *, /usr/bin/rm *, /bin/chmod *, /usr/bin/chmod *, /bin/chown *, /usr/bin/chown *, /usr/bin/mktemp *, /bin/mktemp *, /usr/bin/tee /etc/nclawzero/*, /bin/tee /etc/nclawzero/*
+
+ncz ALL=(root) NOPASSWD: NCZ_SYSTEMD, NCZ_APT, NCZ_PODMAN, NCZ_FILEOPS

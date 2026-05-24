@@ -1,0 +1,19 @@
+[Unit]
+Description=Hermes Agent (port 8642)
+Requires=nclawzero-load-agent-images.service
+After=network-online.target nclawzero-load-agent-images.service
+Wants=network-online.target
+
+[Container]
+Image=docker.io/nousresearch/hermes-agent:latest
+ContainerName=hermes
+PublishPort=8642:8642
+AutoUpdate=registry
+Exec=dashboard --host 0.0.0.0 --port 8642 --no-open --insecure
+Volume=hermes-data:/opt/data:Z
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
